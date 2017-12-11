@@ -1,0 +1,186 @@
+---
+title: 'Do Technology Sector stocks outperform other sector of stocks ? '
+author: "Hsiao-Han Chen, Zeyu Hua, Lianguan Zhou"
+date: "12/10/2017"
+output:
+  pdf_document
+abstract: After the financial crisis, technology stocks always attract extensive attention
+  in the news and in stock market. We will like to analyze all the stock and sector
+  data from Standard \& Poor's 500 index since financial crisis. The data will be
+  collected from Yahoo Finance and we will take a deep look into the distribution
+  of return in each sector and test whether stocks from technology sector outperform  stocks
+  from other sectors.
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+```
+
+# 1. Introduction
+S\&P 500 index is an American stock market index that includes largest 500 companies and highest market capitalization with common stocks listed on the exchange. The index is an important reference for the status of U.S. stock market as the components of the index possess a high market value. We can often hear the news reporting several biggest technology firms such as Apple Inc, Amazon, Intel and Microsoft Corporation are creating high income and drawing the attention from the public.
+
+The Global Financial Crisis of 2007-2008 has been considered the worst financial crisis since the Great Depression of 1930s. U.S. stocks had dropped to the bottom during the crisis. Therefore, we are focusing on periods after the crisis and may provide us some thoughts about how fast the technology industry has grown.  If the technology sector stocks do outperform other sectors, we can also discuss the reason why causing the technology stocks rally in this few years. 
+
+# 2. Methods
+
+## 2.1 Participants
+In this project, we will collect stock data from the Yahoo Finance and use R for data processing and analysis. There are three main components in this project
+
+### 2.1.1. Daily Stocks Return
+Daily Stock return from S\&P 500 between the period from January 01, 2009 to September 30, 2017.  The data includes 2202 daily return data for each stock and total 490 stocks are able to retrieve from the websites.
+
+### 2.1.2. Sector and industries of the stocks
+There are total 11 sectors in the S\&P 500 index. Please see Table~\ref{tab:sectors}  for the stocks count in each sector.
+
+### 2.1.3. Market Capitalization
+Market Capitalization means the market value of the stock and it is calculated by multiplying total outstanding shares of the company and the market price of the stock. In this project, we collected the market capitalization of all S\&P 500 stock components as it is an important weighting factor in the process.
+
+\begin{table}
+\centering
+\begin{tabular}{l|r}
+Sectors & Stock counts \\\hline
+Consumer Staples &37\\
+Energy &35\\
+Financials & 65\\
+Health Care &60\\
+Industrials  &66\\
+Information Technology  &68\\
+Materials & 25\\
+Real Estate & 30\\
+Telecommunications Services  & 5\\
+Utilities &  28
+
+\end{tabular}
+\caption{\label{tab:sectors}Sector table}
+\end{table}
+
+## 2.2 Measures and Procedures
+
+### 2.2.1. Data Processing
+First, we collect the 500 stock daily return data from YAHOO Finance. All the tickers of 500 stocks and market capitalization information is provided on the website. "Quantmod" package in r is installed for retrieving stock data with ticker.  Next, from the market capitalization data, we will create weightings of stocks for each sector. The method is summing up the market capitalization by sector, and have the total market capitalization of each sector.  Then we divide the individual stock's market capitalization by the market capitalization of each sector. The result represents the weighting factor of an individual stock in each sector. We multiply the weighting factor and the daily return of the stock and sum up to get the market cap weighted return of each sector. Here is the code for collecting the data.
+
+```{r, eval=FALSE}
+library(quantmod)
+library(tidyverse)
+library(tibbletime)
+
+marketcap <- read_csv("../data/marketcap.csv")
+
+indsum <- marketcap %>%
+  group_by(Sector) %>%
+  summarise(sum_index = sum(`Market Cap`, na.rm = T))
+
+# market cap sum by sector
+datamerge <- marketcap %>%
+  left_join(indsum, by = "Sector")
+
+# create weight by marketcap for each sector
+weight <- 
+  datamerge %>% 
+  mutate(weight = `Market Cap`/sum_index) %>% 
+  select(Sector, Symbol, weight)
+
+sector <- levels(as.factor(weight$Sector))
+
+# Total 11 sectors
+
+for (j in seq_along(sector)) {
+  # get symbols for each sector
+  symbol <-
+    weight %>%
+    filter(Sector == sector[j]) %>%
+    pull(Symbol)
+  
+  # wight for each symbol
+  symbolweight <-
+    weight %>%
+    filter(Sector == sector[j]) %>%
+    pull(weight)
+  
+  # quantmod package to get stock data from Yahoo
+  for (i in seq_along(symbol)) {
+    tryit <-
+      try(getSymbols(
+        symbol[i],
+        from = "2009-01-01",
+        to = "2017-09-30",
+        src =  "yahoo",
+        adjust =  TRUE
+      ))
+    if (inherits(tryit, "try-error")) {
+      i <- i + 1
+    } else {
+      getSymbols(
+        symbol[i],
+        from = "2009-01-01",
+        to = "2017-09-30",
+        src =  "yahoo",
+        adjust =  TRUE
+      )
+      return <- dailyReturn(get(symbol[i]))
+      weightedreturn <- return * symbolweight[i]
+      names(return) <- symbol[i]
+      if ((i == 1) & (j == 1)) {
+        dailyreturndata <- return
+        weighteddata <- weightedreturn
+      } else {
+        dailyreturndata <- merge(dailyreturndata, return)
+        weighteddata <- merge(weighteddata, weightedreturn)
+      }
+    }
+  }
+  sectorreturn <- rowSums(weighteddata, na.rm = TRUE)
+  names(sectorreturn) <- sector[j]
+  if (j == 1) {
+    tempdata <- cbind(weighteddata, sectorreturn)
+    sectordata <- tempdata[, ncol(tempdata)]
+  } else {
+    sectordata <- merge(sectordata, sectorreturn)
+  }
+}
+
+# transform to time series data
+names(sectordata) <- sector
+
+# get daily return for each symbol and each sector
+xtsdailyreturn<-as.xts(dailyreturndata)
+# write.zoo(xtsdailyreturn,"data/dailyreturndata.csv", sep=",")
+
+xtssector<-as.xts(sectordata)
+# write.zoo(xtssector,"data/sectordata.csv", sep=",")
+
+# data that didn't retrieve successfully
+different.names <- weight$Symbol[!(weight$Symbol %in% names(dailyreturndata))]
+# weight[different.names,2]
+```
+
+### 2.2.2. Descriptive Analysis
+In this part, we want to know the return for each sector by day
+
+```{r, fig.height=10, message=F, warning=F}
+# daily return for each sector
+sectordata <- read_csv("../data/sectordata.csv")
+
+sectordata <- as_tibble(sectordata) %>% 
+  rename(date = Index)
+
+sectordata %>%
+  gather(key = "sector", value = "return", -date) %>%
+  ggplot(aes(x = date, y = return)) +
+  geom_line() +
+  # geom_smooth() +
+  facet_grid(sector ~ .)
+
+# next step: everyday's culumative change
+```
+
+And we are working on more exploratory data analysis...
+### 2.2.3. Hypothesis Testing
+
+## 2.3. Results
+We are working on the hypothesis testing . We will discuss the result in our final paper. 
+
+## 2.4. Discussion
+We will finish this part after we finish the testing and find out the result. We will finish this part in our final paper.
+
+# 3. Reference
