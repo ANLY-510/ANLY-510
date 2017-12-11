@@ -1,0 +1,5 @@
+install.packages("dplyr")
+require(dplyr)
+table<-count(weight,Sector)
+names(table)[2]<-"Stock Counts"
+table
