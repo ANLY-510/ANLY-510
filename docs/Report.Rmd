@@ -17,6 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(quantmod)
 library(tidyverse)
 library(tibbletime)
+library(BSDA)
 ```
 
 # 1. Introduction
@@ -62,7 +63,7 @@ Utilities &  28
 ### 2.2.1. Data Processing
 First, we collect the 500 stock daily return data from YAHOO Finance. All the tickers of 500 stocks and market capitalization information is provided on the website. "Quantmod" package in r is installed for retrieving stock data with ticker.  Next, from the market capitalization data, we will create weightings of stocks for each sector. The method is summing up the market capitalization by sector, and have the total market capitalization of each sector.  Then we divide the individual stock's market capitalization by the market capitalization of each sector. The result represents the weighting factor of an individual stock in each sector. We multiply the weighting factor and the daily return of the stock and sum up to get the market cap weighted return of each sector. Here is the code for collecting the data.
 
-```{r, eval=FALSE}
+```{r, eval}
 library(quantmod)
 library(tidyverse)
 library(tibbletime)
@@ -84,9 +85,11 @@ weight <-
   select(Sector, Symbol, weight)
 
 sector <- levels(as.factor(weight$Sector))
+```
 
+```{r, eval=FALSE}
 # Total 11 sectors
-
+# for each sector get all stocks daily information
 for (j in seq_along(sector)) {
   # get symbols for each sector
   symbol <-
@@ -175,17 +178,54 @@ sectordata %>%
   # geom_smooth() +
   facet_grid(sector ~ .)
 
-# next step: everyday's culumative change
+# everyday's culumative change
+sectordata %>%
+  mutate_at(vars(`Consumer Discretionary`:Utilities),
+            function(x) {x = x + 1}) %>%
+  mutate_at(vars(`Consumer Discretionary`:Utilities), cumprod) %>%
+  gather(key = "sector", value = "cumulative", -date) %>%
+  ggplot(aes(x = as.Date(date), y = cumulative)) +
+  geom_line() +
+  # geom_smooth() +
+  facet_grid(sector ~ .)
 ```
 
 And we are working on more exploratory data analysis...
 
 ### 2.2.3. Hypothesis Testing
 
+From the exploratory we can construct a hypothesis testing:
+
+The average daily return of tech sector is larger than other sectors.
+
+Since the sample size is relatively large, we can use z-test. For each sector $i$, it's sample variance $s_{i}^2$ and actual variance $\sigma_{i}^2$ are almost the same. So we can have a hypothesis testing for each sector $i$:
+
+$$
+H_0: \mu_{tech} \leq \mu_{i} \\ \\
+H_{a}: \mu_{tech} > \mu_{i}
+$$
+
+Use `z.test` function in `BSDA` package:
+
+```{r}
+
+tech <- sectordata$`Information Technology`
+sectorwithouttech <- str_subset(sector, "^(?!Information Technology)")
+
+for (sectorname in sectorwithouttech) {
+  the_sector <- sectordata %>% pull(sectorname)
+  print(paste("For sector:", sectorname))
+  z.test(tech, the_sector, alternative = "greater", 
+         sigma.x = sd(tech)^2, sigma.y = sd(the_sector)^2) %>% 
+    print
+}
+```
+
 ## 2.3. Results
-We are working on the hypothesis testing . We will discuss the result in our final paper. 
 
-## 2.4. Discussion
-We will finish this part after we finish the testing and find out the result. We will finish this part in our final paper.
+The hypothesis testing shows that the average daily return of tech sector is greater than most of other sectors, but it's daily average return is not greater than `Materials`, `Real Estat`, `Telecommunication Services` and `Utilities`.
 
-# 3. Reference
+<!-- ## 2.4. Discussion -->
+<!-- We will finish this part after we finish the testing and find out the result. We will finish this part in our final paper. -->
+
+<!-- # 3. Reference -->

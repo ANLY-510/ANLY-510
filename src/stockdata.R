@@ -4,6 +4,7 @@ library(tibbletime)
 
 marketcap <- read_csv("data/marketcap.csv")
 
+# sum index for each sector
 indsum <- marketcap %>%
   group_by(Sector) %>%
   summarise(sum_index = sum(`Market Cap`, na.rm = T))
@@ -81,9 +82,9 @@ for (j in seq_along(sector)) {
 names(sectordata) <- sector
 
 # get daily return for each symbol and each sector
-xtsdailyreturn<-as.xts(dailyreturndata)
+xtsdailyreturn <- as.xts(dailyreturndata)
 # write.zoo(xtsdailyreturn,"dailyreturndata.csv", sep=",")
-xtssector<-as.xts(sectordata)
+xtssector <- as.xts(sectordata)
 # write.zoo(xtssector,"sectordata.csv", sep=",")
 
 # data that didn't retrieve successfully
@@ -109,6 +110,16 @@ sectordata %>%
   ggplot(aes(x = as.Date(date), y = return)) +
   geom_line() +
   # geom_smooth() +
-  facet_grid(name ~ .)
+  facet_grid(sector ~ .)
 
 # everyday's culumative change
+sectordata %>%
+  mutate_at(vars(`Consumer Discretionary`:Utilities),
+            function(x) {x = x + 1}) %>%
+  mutate_at(vars(`Consumer Discretionary`:Utilities), cumprod) %>%
+  gather(key = "sector", value = "cumulative", -date) %>%
+  ggplot(aes(x = as.Date(date), y = cumulative)) +
+  geom_line() +
+  # geom_smooth() +
+  facet_grid(sector ~ .)
+
