@@ -18,6 +18,7 @@ library(quantmod)
 library(tidyverse)
 library(tibbletime)
 library(BSDA)
+library(ggcorrplot)
 ```
 
 # 1. Introduction
@@ -190,7 +191,17 @@ sectordata %>%
   facet_grid(sector ~ .)
 ```
 
-And we are working on more exploratory data analysis...
+And we can also explore the correlation between daily returns of differenct sectors:
+
+```{r}
+return_corr <- 
+  sectordata %>% dplyr::select(-date) %>% 
+  map_dfc(as.numeric) %>% as.matrix %>% cor
+
+ggcorrplot(return_corr, hc.order = T, type = "lower")
+```
+
+We can see that the daily return of differenct sectors are highly correlated.
 
 ### 2.2.3. Hypothesis Testing
 
