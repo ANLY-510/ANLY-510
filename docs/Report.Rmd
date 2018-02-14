@@ -236,7 +236,22 @@ for (sectorname in sectorwithouttech) {
 
 The hypothesis testing shows that the average daily return of tech sector is greater than most of other sectors, but it's daily average return is not greater than `Materials`, `Real Estat`, `Telecommunication Services` and `Utilities`.
 
-<!-- ## 2.4. Discussion -->
-<!-- We will finish this part after we finish the testing and find out the result. We will finish this part in our final paper. -->
+## 2.4. Discussion 
+In the future we can improve our data by capturing all past history of S&P 500 stock composition. Due to limited data source we are only able to use the most recent S&P 500 stock composition. Having more accurate data can help us to generate a more confident testing result. Based on our result, that most sectors return is significantly lower than the technology sector. In these 9 years of period, the stock market is overall bullish and the economic has kept growing steadily, therefore we can see that why people are crazy about investing in technology stocks as they really can bring a good profit compared to other sectors. The stocks keep climbing as software companies is one of the most important industry that is supporting the growth of U.S. economy. People have faith that the good condition of these companies will stay as strong as it is now.    
 
-<!-- # 3. Reference -->
+# 3. Reference 
+
+Alan T. Arnholt and Ben Evans (2017). BSDA: Basic Statistics and Data Analysis. R
+  package version 1.2.0. https://CRAN.R-project.org/package=BSDA
+
+Alboukadel Kassambara (2016). ggcorrplot: Visualization of a Correlation Matrix using
+  'ggplot2'. R package version 0.1.1. https://CRAN.R-project.org/package=ggcorrplot
+
+Davis Vaughan and Matt Dancho (2018). tibbletime: Time Aware Tibbles. R package version
+  0.1.1. https://CRAN.R-project.org/package=tibbletime
+
+ Jeffrey A. Ryan and Joshua M. Ulrich (2017). quantmod: Quantitative Financial Modelling
+  Framework. R package version 0.4-12. https://CRAN.R-project.org/package=quantmod
+
+List of S&P 500 companies. (n.d.). Retrieved December 10, 2017, from https://en.wikipedia.org/wiki/List_of_S%26P_500_companies
+
